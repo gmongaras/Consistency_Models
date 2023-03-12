@@ -19,8 +19,8 @@
 import torch
 import torch.optim as optim
 import numpy as np
-from models import utils as mutils
-from sde_lib import VESDE, VPSDE
+from score_sde.models import utils as mutils
+from score_sde.sde_lib import VESDE, VPSDE
 
 
 def get_optimizer(config, params):

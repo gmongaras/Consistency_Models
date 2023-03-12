@@ -139,13 +139,13 @@ def get_MNIST_configs():
   model.normalization = 'GroupNorm'
   model.nonlinearity = 'swish'
   model.nf = 128
-  model.ch_mult = (1, 2)
-  model.num_res_blocks = 2
-  model.attn_resolutions = (16,)
+  model.ch_mult = (1, 2, 1)
+  model.num_res_blocks = 3
+  model.attn_resolutions = (8,)
   model.resamp_with_conv = True
   model.conditional = True
   model.fir = True
-  model.fir_kernel = [1, 3]
+  model.fir_kernel = [1, 2, 1]
   model.skip_rescale = True
   model.resblock_type = 'biggan'
   model.progressive = 'none'
@@ -155,9 +155,13 @@ def get_MNIST_configs():
   model.init_scale = 0.0
   model.conv_size = 3
   model.embedding_type = 'positional'
+  model.dropout = 0.0
 
   # data
   config.data.num_channels = 1
   config.data.image_size = 28
+
+  # Restarting
+  training.snapshot_freq = 10000
 
   return config

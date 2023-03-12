@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from score_sde.models.ncsnpp import NCSNpp
+import numpy as np
 
 
 
@@ -61,4 +62,57 @@ class Model(nn.Module):
         # f(x, t) = c_skip(t)x + c_out(t)F(x, t)
         f_xt = self.c_skip(t)*X + self.c_out(t)*F_xt
 
-        return f_xt
+        return f_xt.to(torch.float32)
+    
+
+
+    # Used to sample an image from the current model
+    # shape - Shape of the image. Ex: (3, 64, 64)
+    # N - Number of denoising steps in the sampling trajectory
+    # batch_size - Number of images to generate in parallel
+    def sample(self, shape, N, batch_size):
+        assert N >= 1 and N <= self.max_T, \
+            "The number of sampling steps (sample_N) must be within [1, max_T]"
+
+        # Sample initial image: X_hat_T ~ N(0, T**2)
+        x = torch.distributions.normal.Normal(0, self.max_T.cpu().item()**2).sample([batch_size] + shape).to(self.device)
+
+        # Put the initial image through the model
+        x = self.forward(x, torch.repeat_interleave(self.max_T.unsqueeze(0), batch_size, dim=0))
+
+        # Clamp x between -1 and 1
+        x = x.clamp(-1, 1)
+
+        # Unit normal distribution
+        unit_normal = torch.distributions.normal.Normal(0, 1)
+
+        #### NOTE: The model work based on what step it's on, not
+        #### what step it's going to. So if it needs to go from
+        #### step T to step 1, you give it T. IT is trained to
+        #### go from any step back to step 1 so giving it noise
+        #### and going back to step 1 may help it a little, but
+        #### isn't necessary!
+
+        # Iterate from n=N-1 to n=2 which representnts decreasing
+        # values of t from max_T to 1. When N = max_T, this
+        # sequence decreases by 1, else this is a subset. 
+        # Note: We don't have to run n=1 since that doesn't change the output
+        #       due to the properties of c_skip and c_out
+        for n in range(int(N.cpu().item())-1, 1, -1):
+            # Sample from a unit normal distribution
+            z = unit_normal.sample([batch_size] + shape).to(x.device)
+
+            # Map the n index to the value of t
+            t = self.n_to_t(torch.tensor([n], device=x.device), N)
+            t = torch.repeat_interleave(t, batch_size, dim=0)
+            t_exten = t.reshape(-1, 1, 1, 1)
+            x = x + torch.sqrt(torch.max(torch.tensor(0), t_exten**2 - self.epsilon**2))*z
+
+            # Update x using the model
+            x = self.forward(x.to(torch.float32), t)
+
+            # Clamp x between -1 and 1
+            x = x.clamp(-1, 1)
+        
+        # Return the sample
+        return x.to(torch.float32)
