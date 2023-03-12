@@ -73,7 +73,7 @@ def main():
     trainer = Trainer(config, model)
 
     # Train the model
-    trainer.train2(config, "./out")
+    trainer.train2(config, "./outputs")
 
 
 
