@@ -164,4 +164,39 @@ def get_MNIST_configs():
   # Restarting
   training.snapshot_freq = 10000
 
+  
+  
+
+
+  config.optim.lr = 4e-4
+  config.training.batch_size = 256
+  config.eval.batch_size = 64
+  config.sampling.sample_size = 10
+  config.sampling.sample_steps = 100
+  config.training.n_iters = 100000
+  config.training.loss_funct = "l2"
+  config.training.sample_N = 5
+
+  config.model.sigma_data = 0.5
+  config.model.t_rho = 7
+  config.model.max_T = 80
+  config.training.mu = 0
+  config.training.mu_0 = 0.9
+  config.training.s_0 = 2
+  config.training.s_1 = 150
+  config.model.epsilon = 0.002
+
+  config.dataset = ml_collections.ConfigDict({})
+  config.dataset.data_type = "MNIST"
+  config.dataset.shuffle = True
+  config.dataset.loadMem = True
+
+  config.saving = ml_collections.ConfigDict({})
+  config.saving.save_dir = "outputs/MNIST/saved_models"
+
+  config.loading = ml_collections.ConfigDict({})
+  config.loading.loadModel = False
+
+
+
   return config

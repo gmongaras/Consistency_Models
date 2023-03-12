@@ -3,6 +3,8 @@ from Trainer import Trainer
 from ncspp_configs import get_MNIST_configs
 import torch
 import ml_collections
+import json
+import os
 
 
 
@@ -12,8 +14,8 @@ import ml_collections
 def main():
     # Extra parameters
     lr = 4e-4
-    batch_size = 256
-    eval_batch_size = 64
+    batch_size = 64
+    eval_batch_size = 12
     sample_size = 10
     sample_steps = 100
     sample_N = 5 # In the sample trajectory, how many steps to take to generate the image (between 1 and max_T)
@@ -32,39 +34,76 @@ def main():
     max_T = 80
 
     # Dataset options
-    data_type = "MNIST"
+    data_type = "CIFAR10"
     shuffle = True
     loadMem = True
 
+    # Saving
+    baseDir = "outputs/MNIST"
+    save_dir = "outputs/MNIST/saved_models"
+
+    # Loading
+    loadModel = False
+    load_dir = "outputs/MNIST/saved_models/iter_1000"
+    load_file_norm = "model_norm_1000s.pt"
+    load_file_minus = "model_minus_1000s.pt"
+    load_file_optim = "optim_1000s.pt"
+    load_file_config = "config_1000s.json"
 
 
 
-    # Get the configuration file for the ncsp++ model
-    config = get_MNIST_configs()
 
-    # Change some configs for the new parameters
-    config.optim.lr = lr
-    config.training.batch_size = batch_size
-    config.eval.batch_size = eval_batch_size
-    config.sampling.sample_size = sample_size
-    config.sampling.sample_steps = sample_steps
-    config.training.n_iters = n_iters
-    config.training.loss_funct = loss_funct
-    config.training.sample_N = sample_N
+    # Get the configuration file for the ncsp++ model if
+    # a model isn't going to be loaded. Otherwise, load the
+    # configuration file
+    if not loadModel:
+        config = get_MNIST_configs()
 
-    config.model.sigma_data = sigma_data
-    config.model.t_rho = t_rho
-    config.model.max_T = max_T
-    config.training.mu = mu
-    config.training.mu_0 = mu_0
-    config.training.s_0 = s_0
-    config.training.s_1 = s_1
-    config.model.epsilon = epsilon
+        # Change some configs for the new parameters
+        config.optim.lr = lr
+        config.training.batch_size = batch_size
+        config.eval.batch_size = eval_batch_size
+        config.sampling.sample_size = sample_size
+        config.sampling.sample_steps = sample_steps
+        config.training.n_iters = n_iters
+        config.training.loss_funct = loss_funct
+        config.training.sample_N = sample_N
 
-    config.dataset = ml_collections.ConfigDict({})
-    config.dataset.data_type = data_type
-    config.dataset.shuffle = shuffle
-    config.dataset.loadMem = loadMem
+        config.model.sigma_data = sigma_data
+        config.model.t_rho = t_rho
+        config.model.max_T = max_T
+        config.training.mu = mu
+        config.training.mu_0 = mu_0
+        config.training.s_0 = s_0
+        config.training.s_1 = s_1
+        config.model.epsilon = epsilon
+
+        config.dataset = ml_collections.ConfigDict({})
+        config.dataset.data_type = data_type
+        config.dataset.shuffle = shuffle
+        config.dataset.loadMem = loadMem
+
+        config.saving = ml_collections.ConfigDict({})
+        config.saving.save_dir = save_dir
+
+        config.loading = ml_collections.ConfigDict({})
+        config.loading.loadModel = loadModel
+    
+    else:
+        # Open and load in the config file
+        with open(load_dir + os.sep + load_file_config, "r") as f:
+            config = json.load(f)
+        config = ml_collections.ConfigDict(config)
+
+        # Add important information to the config file
+        config.device = config.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+        config.loading = ml_collections.ConfigDict({})
+        config.loading.loadModel = loadModel
+        config.loading.load_dir = load_dir
+        config.loading.load_file_norm = load_file_norm
+        config.loading.load_file_minus = load_file_minus
+        config.loading.load_file_optim = load_file_optim
+        config.loading.load_file_config = load_file_config
 
     # Create the model
     model = Model(config)
@@ -73,7 +112,7 @@ def main():
     trainer = Trainer(config, model)
 
     # Train the model
-    trainer.train2(config, "./outputs")
+    trainer.train(config, baseDir)
 
 
 

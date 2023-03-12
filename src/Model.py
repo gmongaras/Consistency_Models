@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from score_sde.models.ncsnpp import NCSNpp
 import numpy as np
+import os
+import json
 
 
 
@@ -11,6 +13,9 @@ import numpy as np
 class Model(nn.Module):
     def __init__(self, config):
         super(Model, self).__init__()
+
+        # Save the config file
+        self.config = config
 
         # Save parts of the given config file
         self.device = config.device
@@ -116,3 +121,10 @@ class Model(nn.Module):
         
         # Return the sample
         return x.to(torch.float32)
+    
+    
+    # Load the model
+    # loadDir - Directory to load the model from
+    # loadFile - Pytorch model file to load in
+    def loadModel(self, loadDir, loadFile):
+        self.load_state_dict(torch.load(loadDir + os.sep + loadFile, map_location=self.device))
