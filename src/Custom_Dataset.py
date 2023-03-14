@@ -37,8 +37,15 @@ class CustomDataset(Dataset):
         # Load the dataset
         if data_type == "MNIST":
             self.dataset = torchvision.datasets.MNIST("./data/", train=train, transform=self.transform, download=True)
+        elif data_type == "CIFAR10":
+            self.dataset = torchvision.datasets.CIFAR10("./data/", train=train, transform=self.transform, download=True)
+        elif data_type == "CIFAR100":
+            self.dataset = torchvision.datasets.CIFAR100("./data/", train=train, transform=self.transform, download=True)
         else:
             raise NotImplementedError
+        
+        # Load the classes as np arrays
+        self.dataset.targets = np.array(self.dataset.targets)
         
         self.num_data = len(self.dataset)
 
@@ -61,12 +68,24 @@ class CustomDataset(Dataset):
         data_idx = self.data_idxs[idx]
 
         # Get the data from the dataset
-        X = self.dataset.data[data_idx].clone()
-        cls = self.dataset.targets[data_idx].clone()
+        try:
+            X = self.dataset.data[data_idx].clone()
+        except AttributeError:
+            X = torch.tensor(self.dataset.data[data_idx])
+        try:
+            cls = self.dataset.targets[data_idx].clone()
+        except AttributeError:
+            cls = torch.tensor(self.dataset.targets[data_idx])
         if len(X.shape) == 2 and type(idx) == int:
             X = X.unsqueeze(0)
         elif len(X.shape) == 3 and type(idx) != int:
             X = X.unsqueeze(1)
+
+        # Shape correction
+        if X.shape[0] > 3 and len(X.shape) == 3:
+            X = X.permute(2, 0, 1)
+        elif X.shape[1] > 3 and len(X.shape) == 4:
+            X = X.permute(0, 3, 1, 2)
 
         # Transform the image between -1 and 1
         X = reduce_image(X)

@@ -79,14 +79,11 @@ class Model(nn.Module):
         assert N >= 1 and N <= self.max_T, \
             "The number of sampling steps (sample_N) must be within [1, max_T]"
 
-        # Sample initial image: X_hat_T ~ N(0, T**2)
-        x = torch.distributions.normal.Normal(0, self.max_T.cpu().item()**2).sample([batch_size] + shape).to(self.device)
+        # Sample initial image: X_hat_T ~ N(0, T)
+        x = torch.distributions.normal.Normal(0, self.max_T.cpu().item()).sample([batch_size] + shape).to(self.device)
 
         # Put the initial image through the model
         x = self.forward(x, torch.repeat_interleave(self.max_T.unsqueeze(0), batch_size, dim=0))
-
-        # Clamp x between -1 and 1
-        x = x.clamp(-1, 1)
 
         # Unit normal distribution
         unit_normal = torch.distributions.normal.Normal(0, 1)
@@ -117,10 +114,10 @@ class Model(nn.Module):
             x = self.forward(x.to(torch.float32), t)
 
             # Clamp x between -1 and 1
-            x = x.clamp(-1, 1)
+            # x = x.clamp(-1, 1)
         
         # Return the sample
-        return x.to(torch.float32)
+        return x.clamp(-1, 1).to(torch.float32)
     
     
     # Load the model

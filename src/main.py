@@ -1,6 +1,6 @@
 from Model import Model
 from Trainer import Trainer
-from ncspp_configs import get_MNIST_configs
+from ncspp_configs import get_MNIST_configs, get_CIFAR10_configs
 import torch
 import ml_collections
 import json
@@ -14,11 +14,11 @@ import os
 def main():
     # Extra parameters
     lr = 4e-4
-    batch_size = 64
-    eval_batch_size = 12
+    batch_size = 128
+    eval_batch_size = 64
     sample_size = 10
     sample_steps = 100
-    sample_N = 5 # In the sample trajectory, how many steps to take to generate the image (between 1 and max_T)
+    sample_N = 1 # In the sample trajectory, how many steps to take to generate the image (between 1 and max_T)
     EMA_decay_rate = 0.9999
     n_iters = 100000
     loss_funct = "l2" # L1, L2, or LIPS for loss
@@ -39,16 +39,16 @@ def main():
     loadMem = True
 
     # Saving
-    baseDir = "outputs/MNIST"
-    save_dir = "outputs/MNIST/saved_models"
+    baseDir = "outputs/CIFAR10"
+    save_dir = "outputs/CIFAR10/saved_models"
 
     # Loading
-    loadModel = False
-    load_dir = "outputs/MNIST/saved_models/iter_1000"
-    load_file_norm = "model_norm_1000s.pt"
-    load_file_minus = "model_minus_1000s.pt"
-    load_file_optim = "optim_1000s.pt"
-    load_file_config = "config_1000s.json"
+    loadModel = True
+    load_dir = "outputs/CIFAR10/saved_models/iter_89000"
+    load_file_norm = "model_norm_89000s.pt"
+    load_file_minus = "model_minus_89000s.pt"
+    load_file_optim = "optim_89000s.pt"
+    load_file_config = "config_89000s.json"
 
 
 
@@ -57,7 +57,7 @@ def main():
     # a model isn't going to be loaded. Otherwise, load the
     # configuration file
     if not loadModel:
-        config = get_MNIST_configs()
+        config = get_CIFAR10_configs()
 
         # Change some configs for the new parameters
         config.optim.lr = lr
@@ -104,6 +104,9 @@ def main():
         config.loading.load_file_minus = load_file_minus
         config.loading.load_file_optim = load_file_optim
         config.loading.load_file_config = load_file_config
+
+        # Overwriting
+        config.training.sample_N = sample_N
 
     # Create the model
     model = Model(config)

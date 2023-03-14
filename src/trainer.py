@@ -127,6 +127,16 @@ class Trainer():
         else:
             n_samp = torch.distributions.uniform.Uniform(1, self.N_sched(k)-1).sample((X.shape[0],)).to(self.device)
 
+        adds = []
+        for i in range(0, X.shape[0]):
+            if self.N_sched(k)-1 == 1:
+                adds.append(torch.tensor(1).to(self.device))
+            else:
+                adds.append(
+                    torch.distributions.uniform.Uniform(1, self.N_sched(k)-n_samp[i]).sample((1,)).to(self.device)
+                )
+        adds = torch.stack(adds).squeeze()
+
         # Convert the n samples to timesteps t_n and t_n+1
         timesteps = self.model_norm.n_to_t(n_samp, self.N_sched(k))
         timesteps_1 = self.model_norm.n_to_t(n_samp+1, self.N_sched(k))
@@ -343,9 +353,9 @@ class Trainer():
             saveFile_minus += f"_{step}s"
             optimFile += f"_{step}s"
             saveDefFile += f"_{step}s"
-        saveFile_norm += ".pkl"
-        saveFile_minus += ".pkl"
-        optimFile += ".pkl"
+        saveFile_norm += ".pt"
+        saveFile_minus += ".pt"
+        optimFile += ".pt"
         saveDefFile += ".json"
 
         # Change epoch and step state if given
